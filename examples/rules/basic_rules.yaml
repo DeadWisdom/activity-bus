@@ -1,0 +1,39 @@
+# Basic logging rule for all activities
+id: example.rule.log_all
+match:
+  type: "*"  # Match any activity type
+effect:
+  - example.effects.log_activity
+priority: 10  # Run first
+type: Rule
+
+---
+# Process Create activities
+id: example.rule.process_create
+match:
+  type: Create
+effect:
+  - example.effects.process_create
+priority: 50
+type: Rule
+
+---
+# Process Note activities
+id: example.rule.process_note
+match:
+  type: Note
+effect:
+  - example.effects.process_note
+priority: 50
+type: Rule
+
+---
+# Process Follow activities
+id: example.rule.process_follow
+match:
+  type: Follow
+effect:
+  - example.effects.process_follow
+  - example.effects.notify_follow_target
+priority: 50
+type: Rule

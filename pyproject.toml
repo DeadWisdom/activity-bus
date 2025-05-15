@@ -1,0 +1,15 @@
+[project]
+name = "activity-bus"
+version = "0.1.0"
+description = "A Python library for processing Activity Streams 2.0 activities via a rule-based engine"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "pyyaml",
+    "nanoid",
+    "asyncio",
+]
+
+[project.urls]
+Homepage = "https://github.com/DeadWisdom/activity-bus"
+Issues = "https://github.com/DeadWisdom/activity-bus/issues"
