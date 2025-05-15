@@ -1,5 +1,5 @@
-# ABOUTME: Example script demonstrating usage of ActivityBus with sample activities
-# ABOUTME: Shows how to submit and process activities with rules and effects
+# Example script demonstrating usage of ActivityBus with sample activities
+# Shows how to submit and process activities with rules and effects
 
 import asyncio
 import sys

@@ -1,5 +1,5 @@
-# ABOUTME: Initializes the activity_bus package and provides essential exports
-# ABOUTME: Serves as the main entry point for using the Activity Bus library
+# Initializes the activity_bus package and provides essential exports
+# Serves as the main entry point for using the Activity Bus library
 
 from .bus import ActivityBus
 from .effects import effect, load_effects

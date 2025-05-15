@@ -1,5 +1,5 @@
-# ABOUTME: Example effects module demonstrating different effect functions
-# ABOUTME: Used by ActivityBus examples to showcase rule-based activity processing
+# Example effects module demonstrating different effect functions
+# Used by ActivityBus examples to showcase rule-based activity processing
 
 import logging
 from activity_bus import effect

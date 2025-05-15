@@ -1,5 +1,5 @@
-# ABOUTME: Implements the effect decorator and loading functionality
-# ABOUTME: Manages registration and execution of effect functions
+# Implements the effect decorator and loading functionality
+# Manages registration and execution of effect functions
 
 import inspect
 import importlib

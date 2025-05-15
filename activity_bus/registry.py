@@ -1,5 +1,5 @@
-# ABOUTME: Provides a central registry for effects used by the ActivityBus
-# ABOUTME: Allows for dynamic registration and retrieval of effects
+# Provides a central registry for effects used by the ActivityBus
+# Allows for dynamic registration and retrieval of effects
 
 class Registry:
     """A central registry for storing effect functions and their metadata."""

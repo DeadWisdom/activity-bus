@@ -1,5 +1,5 @@
-# ABOUTME: Defines error classes used throughout the activity_bus package 
-# ABOUTME: Provides specific exceptions for different error conditions
+# Defines error classes used throughout the activity_bus package 
+# Provides specific exceptions for different error conditions
 
 class ActivityBusError(Exception):
     """Base exception class for all Activity Bus errors."""

@@ -1,5 +1,5 @@
-# ABOUTME: Implements the core ActivityBus class for activity processing
-# ABOUTME: Provides validation, submission, and processing functionalities
+# Implements the core ActivityBus class for activity processing
+# Provides validation, submission, and processing functionalities
 
 import asyncio
 import time

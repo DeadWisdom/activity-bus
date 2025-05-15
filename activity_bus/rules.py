@@ -1,5 +1,5 @@
-# ABOUTME: Handles loading and validation of rules from YAML files
-# ABOUTME: Provides utilities for rule management within the ActivityBus
+# Handles loading and validation of rules from YAML files
+# Provides utilities for rule management within the ActivityBus
 
 import os
 import yaml

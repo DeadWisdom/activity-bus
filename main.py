@@ -1,5 +1,5 @@
-# ABOUTME: Main entry point for the activity-bus package
-# ABOUTME: Provides a simple CLI to run examples or start processing
+# Main entry point for the activity-bus package
+# Provides a simple CLI to run examples or start processing
 
 import sys
 import asyncio
