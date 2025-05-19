@@ -1,53 +1,51 @@
-# Provides a central registry for effects used by the ActivityBus
-# Allows for dynamic registration and retrieval of effects
+"""
+This module provides functionality for registering and retrieving behaviors.
+"""
+from collections.abc import Callable
 
 
-class Registry:
-    """A central registry for storing effect functions and their metadata."""
+class BehaviorRegistry:
+    """Registry for storing and retrieving behavior functions."""
 
-    def __init__(self) -> None:
-        self.effects = {}
+    def __init__(self):
+        """Initialize an empty behavior registry."""
+        self._behaviors: dict[str, Callable] = {}
 
-    def register(self, effect_id, func, priority=100, **metadata):
+    def register(self, behavior_id: str, function: Callable) -> None:
         """
-        Register an effect function with its metadata.
-
+        Register a behavior function with a specific ID.
+        
         Args:
-            effect_id (str): Unique identifier for the effect
-            func (callable): The effect function
-            priority (int): Execution priority (lower numbers execute first)
-            **metadata: Additional metadata for the effect
+            behavior_id: The ID of the behavior, typically in the form of "/sys/behaviors/{module}.{function}"
+            function: The callable function to be executed when the behavior is matched
         """
-        self.effects[effect_id] = {
-            "id": effect_id,
-            "function": func,
-            "priority": priority,
-            **metadata,
-            "type": "Effect",
-        }
-        return self.effects[effect_id]
+        self._behaviors[behavior_id] = function
 
-    def get(self, effect_id):
+    def get(self, behavior_id: str) -> Callable | None:
         """
-        Get an effect by its ID.
-
+        Get a behavior function by its ID.
+        
         Args:
-            effect_id (str): The effect ID to retrieve
-
+            behavior_id: The ID of the behavior to retrieve
+            
         Returns:
-            dict: The effect entry, or None if not found
+            The behavior function if found, None otherwise
         """
-        return self.effects.get(effect_id)
+        return self._behaviors.get(behavior_id)
 
-    def list_effects(self):
+    def clear(self) -> None:
+        """Clear all registered behaviors."""
+        self._behaviors.clear()
+
+    def all_behaviors(self) -> dict[str, Callable]:
         """
-        List all registered effects.
-
+        Return all registered behaviors.
+        
         Returns:
-            list: List of effect entries (without the function references)
+            Dictionary mapping behavior IDs to their functions
         """
-        return [{k: v for k, v in effect.items() if k != "function"} for effect in self.effects.values()]
+        return dict(self._behaviors)
 
 
 # Global registry instance
-registry = Registry()
+registry = BehaviorRegistry()

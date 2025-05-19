@@ -1,44 +1,27 @@
-# Defines error classes used throughout the activity_bus package
-# Provides specific exceptions for different error conditions
-
+"""
+This module contains custom exceptions for the Activity Bus library.
+"""
 
 class ActivityBusError(Exception):
-    """Base exception class for all Activity Bus errors."""
-
+    """Base exception for all Activity Bus related errors."""
     pass
 
 
 class InvalidActivityError(ActivityBusError):
-    """Raised when an activity doesn't meet the required structure."""
-
+    """Raised when an activity is invalid or missing required fields."""
     pass
 
 
-class ActivityIdError(ActivityBusError):
-    """Raised when there's an issue with activity ID generation or validation."""
-
+class ActivityIdError(InvalidActivityError):
+    """Raised when an activity ID is invalid or improperly scoped."""
     pass
 
 
-class EffectExecutionError(ActivityBusError):
-    """Raised when an effect fails to execute properly."""
-
+class BehaviorExecutionError(ActivityBusError):
+    """Raised when there's an error executing a behavior."""
     pass
 
 
-class RuleMatchError(ActivityBusError):
-    """Raised when there's an issue with rule matching."""
-
-    pass
-
-
-class RuleLoadError(ActivityBusError):
-    """Raised when there's an issue loading rules from files."""
-
-    pass
-
-
-class EffectLoadError(ActivityBusError):
-    """Raised when there's an issue loading effects from modules."""
-
+class BehaviorRegistrationError(ActivityBusError):
+    """Raised when there's an error registering a behavior."""
     pass

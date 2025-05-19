@@ -1,38 +1,41 @@
-from typing import NoReturn
-
-import pytest
+"""
+Tests for the errors module.
+"""
 
 from activity_bus.errors import (
     ActivityBusError,
     ActivityIdError,
-    EffectExecutionError,
-    EffectLoadError,
+    BehaviorExecutionError,
+    BehaviorRegistrationError,
     InvalidActivityError,
-    RuleLoadError,
-    RuleMatchError,
 )
 
 
-def test_activity_bus_error() -> NoReturn:
-    """Test that ActivityBusError can be raised and caught."""
-    with pytest.raises(ActivityBusError):
-        raise ActivityBusError("Test error")
+def test_error_hierarchy():
+    """Test that the error hierarchy is structured correctly."""
+    # ActivityBusError is the base class
+    assert issubclass(InvalidActivityError, ActivityBusError)
+    assert issubclass(ActivityIdError, InvalidActivityError)
+    assert issubclass(BehaviorExecutionError, ActivityBusError)
+    assert issubclass(BehaviorRegistrationError, ActivityBusError)
 
+    # ActivityIdError is a subclass of InvalidActivityError
+    assert issubclass(ActivityIdError, InvalidActivityError)
 
-def test_error_inheritance() -> None:
-    """Test that all errors inherit from ActivityBusError."""
-    error_classes = [
-        InvalidActivityError,
-        ActivityIdError,
-        EffectExecutionError,
-        RuleMatchError,
-        RuleLoadError,
-        EffectLoadError,
-    ]
+    # Each error can be instantiated with a message
+    error_msg = "Test error message"
 
-    for error_class in error_classes:
-        error = error_class("Test error")
-        assert isinstance(error, ActivityBusError)
+    error = ActivityBusError(error_msg)
+    assert str(error) == error_msg
 
-        # Make sure the error message is preserved
-        assert str(error) == "Test error"
+    error = InvalidActivityError(error_msg)
+    assert str(error) == error_msg
+
+    error = ActivityIdError(error_msg)
+    assert str(error) == error_msg
+
+    error = BehaviorExecutionError(error_msg)
+    assert str(error) == error_msg
+
+    error = BehaviorRegistrationError(error_msg)
+    assert str(error) == error_msg

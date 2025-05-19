@@ -1,297 +1,337 @@
+"""
+Tests for the ActivityBus core class.
+"""
 import asyncio
-import datetime
-from typing import NoReturn
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from activity_bus.behaviors import registry, when
 from activity_bus.bus import ActivityBus
 from activity_bus.errors import ActivityIdError, InvalidActivityError
-from activity_bus.registry import registry
 
 
-# Mock ActivityStore for testing
-class MockActivityStore:
-    def __init__(self) -> None:
-        self.stored_activities = {}
-        self.collections = {"/sys/rules": [], "/sys/effects": []}
-
-    async def store(self, activity, collection=None):
-        activity_id = activity.get("id")
-        if activity_id:
-            if collection:
-                if collection not in self.collections:
-                    self.collections[collection] = []
-                self.collections[collection].append(activity)
-            else:
-                self.stored_activities[activity_id] = activity
-        return activity
-
-    async def query(self, query, collection=None):
-        if collection:
-            return self.collections.get(collection, [])
-        return list(self.stored_activities.values())
-
-    async def dereference(self, activity):
-        return activity
-
-    async def frame(self, activity, pattern, require_match=False):
-        # Simple matching logic for testing
-        for key, value in pattern.items():
-            if key not in activity or activity[key] != value:
-                if require_match:
-                    return False
-                else:
-                    return None
-        return activity
-
-    async def convert_to_tombstone(self, activity):
-        tombstone = {
-            "id": activity["id"],
-            "type": "Tombstone",
-            "formerType": activity.get("type", "Unknown"),
-            "deleted": datetime.datetime.utcnow().isoformat() + "Z",
-        }
-        self.stored_activities[activity["id"]] = tombstone
-        return tombstone
+# Clear registry before each test
+@pytest.fixture(autouse=True)
+def clear_registry():
+    registry.clear()
+    yield
 
 
 @pytest.fixture
 def mock_store():
-    return MockActivityStore()
+    """Create a mock ActivityStore."""
+    store = AsyncMock()
+    store.store = AsyncMock(return_value=None)
+    store.dereference = AsyncMock(return_value=None)
+    store.convert_to_tombstone = AsyncMock(side_effect=lambda x: {
+        "type": "Tombstone",
+        "formerType": x.get("type", "Unknown"),
+        "id": x.get("id", "unknown-id"),
+        "deleted": "2023-01-01T00:00:00Z"
+    })
+    return store
 
 
 @pytest.fixture
 def bus(mock_store):
-    return ActivityBus(store=mock_store, namespace="https://example.com")
+    """Create an ActivityBus with a mock store."""
+    return ActivityBus(store=mock_store)
 
 
 @pytest.mark.asyncio
-async def test_activity_bus_init() -> None:
-    """Test ActivityBus initialization."""
-    # Test with provided store
-    mock_store = MockActivityStore()
-    bus = ActivityBus(store=mock_store, namespace="https://example.com")
-    assert bus.store == mock_store
-    assert bus.namespace == "https://example.com"
+async def test_init():
+    """Test initialization of the ActivityBus."""
+    # Default initialization
+    bus = ActivityBus()
+
+    # Should create an asyncio.Queue
     assert isinstance(bus.queue, asyncio.Queue)
 
-    # Test without namespace
-    bus = ActivityBus(store=mock_store)
-    assert bus.namespace is None
+    # Should have a default store
+    assert bus.store is not None
+
+    # Should have a default namespace
+    assert bus.namespace == "activity_bus"
+
+    # Custom initialization
+    mock_store = MagicMock()
+    custom_namespace = "custom_namespace"
+
+    bus = ActivityBus(store=mock_store, namespace=custom_namespace)
+
+    # Should use the provided store
+    assert bus.store is mock_store
+
+    # Should use the provided namespace
+    assert bus.namespace == custom_namespace
 
 
 @pytest.mark.asyncio
-async def test_submit_valid_activity(bus) -> None:
+async def test_submit_valid_activity(bus, mock_store):
     """Test submitting a valid activity."""
-    activity = {"type": "Create", "actor": "test-user"}
+    # Create a valid activity
+    activity = {
+        "type": "Create",
+        "actor": "https://example.com/users/123",
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        }
+    }
 
+    # Submit the activity
     result = await bus.submit(activity)
 
-    # Check ID was generated
+    # Should return a valid activity with additional fields
+    assert result["type"] == "Create"
+    assert result["actor"] == "https://example.com/users/123"
     assert "id" in result
-    assert result["id"].startswith("https://example.com/users/test-user/outbox/")
-
-    # Check timestamp was added
     assert "published" in result
-
-    # Check result field was initialized
     assert "result" in result
-    assert result["result"] == []
 
-    # Check activity was stored
-    assert result["id"] in bus.store.stored_activities
+    # Should store the activity
+    mock_store.store.assert_called_once()
 
-    # Check activity was enqueued
-    queued_activity = await bus.queue.get()
-    assert queued_activity == result
+    # Should enqueue the activity
+    assert bus.queue.qsize() == 1
 
 
 @pytest.mark.asyncio
-async def test_submit_with_existing_id(bus) -> None:
+async def test_submit_with_existing_id(bus, mock_store):
     """Test submitting an activity with an existing ID."""
-    activity = {"type": "Create", "actor": "test-user", "id": "https://example.com/users/test-user/outbox/existing-id"}
+    # Create a valid activity with an ID
+    activity_id = "/users/123/outbox/abcdef123456"
+    activity = {
+        "type": "Create",
+        "actor": "https://example.com/users/123",
+        "id": activity_id,
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        }
+    }
 
+    # Submit the activity
     result = await bus.submit(activity)
 
-    # Check ID was preserved
-    assert result["id"] == "https://example.com/users/test-user/outbox/existing-id"
+    # Should keep the existing ID
+    assert result["id"] == activity_id
 
-    # Check activity was stored with the existing ID
-    assert "https://example.com/users/test-user/outbox/existing-id" in bus.store.stored_activities
+    # Should store the activity
+    mock_store.store.assert_called_once()
 
-
-@pytest.mark.asyncio
-async def test_submit_invalid_activity(bus) -> None:
-    """Test submitting invalid activities."""
-    # Missing actor
-    with pytest.raises(InvalidActivityError):
-        await bus.submit({"type": "Create"})
-
-    # Missing type
-    with pytest.raises(InvalidActivityError):
-        await bus.submit({"actor": "test-user"})
-
-    # Not a dictionary
-    with pytest.raises(InvalidActivityError):
-        await bus.submit("not a dictionary")
+    # Should enqueue the activity
+    assert bus.queue.qsize() == 1
 
 
 @pytest.mark.asyncio
-async def test_submit_invalid_id(bus) -> None:
-    """Test submitting an activity with an invalid ID scope."""
-    activity = {"type": "Create", "actor": "test-user", "id": "https://wrong-domain.com/users/test-user/outbox/bad-id"}
+async def test_submit_invalid_activity_missing_actor(bus):
+    """Test submitting an invalid activity missing an actor."""
+    # Create an invalid activity (missing actor)
+    activity = {
+        "type": "Create",
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        }
+    }
 
-    with pytest.raises(ActivityIdError):
+    # Submit the activity - should raise InvalidActivityError
+    with pytest.raises(InvalidActivityError) as excinfo:
         await bus.submit(activity)
 
+    # Verify the error message
+    assert "must contain an 'actor' field" in str(excinfo.value)
 
-@pytest.mark.asyncio
-async def test_get_queue_length(bus) -> None:
-    """Test getting the length of the activity queue."""
-    # Initially empty
-    assert await bus.get_queue_length() == 0
-
-    # Add an item
-    activity = {"type": "Create", "actor": "test-user"}
-    await bus.submit(activity)
-
-    # Check length is 1
-    assert await bus.get_queue_length() == 1
-
-    # Process the item
-    await bus.process_next()
-
-    # Check queue is empty again
-    assert await bus.get_queue_length() == 0
+    # Should not store or enqueue the activity
+    assert not bus.store.store.called
+    assert bus.queue.qsize() == 0
 
 
 @pytest.mark.asyncio
-async def test_process_next_empty_queue(bus) -> None:
-    """Test processing from an empty queue."""
+async def test_submit_invalid_activity_missing_type(bus):
+    """Test submitting an invalid activity missing a type."""
+    # Create an invalid activity (missing type)
+    activity = {
+        "actor": "https://example.com/users/123",
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        }
+    }
+
+    # Submit the activity - should raise InvalidActivityError
+    with pytest.raises(InvalidActivityError) as excinfo:
+        await bus.submit(activity)
+
+    # Verify the error message
+    assert "must contain a 'type' field" in str(excinfo.value)
+
+    # Should not store or enqueue the activity
+    assert not bus.store.store.called
+    assert bus.queue.qsize() == 0
+
+
+@pytest.mark.asyncio
+async def test_submit_invalid_id_scope(bus):
+    """Test submitting an activity with an invalid ID scope."""
+    # Create an activity with an invalid ID scope
+    activity = {
+        "type": "Create",
+        "actor": "https://example.com/users/123",
+        "id": "/users/456/outbox/abcdef123456",  # Different user ID
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        }
+    }
+
+    # Submit the activity - should raise ActivityIdError
+    with pytest.raises(ActivityIdError) as excinfo:
+        await bus.submit(activity)
+
+    # Verify the error message
+    assert "not properly scoped under actor" in str(excinfo.value)
+
+    # Should not store or enqueue the activity
+    assert not bus.store.store.called
+    assert bus.queue.qsize() == 0
+
+
+@pytest.mark.asyncio
+async def test_process_next_empty_queue(bus):
+    """Test processing the next activity when the queue is empty."""
     # Queue is empty
-    assert await bus.get_queue_length() == 0
+    assert bus.queue.qsize() == 0
 
-    # With no_wait=True, should return None immediately
-    result = await bus.process_next(no_wait=True)
+    # Process the next activity
+    result = await bus.process_next()
+
+    # Should return None
     assert result is None
 
-
-@pytest.mark.asyncio
-async def test_process_activity(bus, mock_store) -> None:
-    """Test processing an activity with matching rules."""
-
-    # Register a test effect
-    def test_effect(activity):
-        if "result" not in activity:
-            activity["result"] = []
-        activity["result"].append({"type": "Note", "content": "Effect executed"})
-        return {"type": "Log", "message": "Effect log"}
-
-    registry.register("test.effect", test_effect)
-
-    # Add a rule
-    rule = {"id": "test.rule", "match": {"type": "Create"}, "effect": ["test.effect"], "priority": 100, "type": "Rule"}
-    await mock_store.store(rule, collection="/sys/rules")
-
-    # Create and submit an activity
-    activity = {"type": "Create", "actor": "test-user", "object": {"type": "Note", "content": "Test content"}}
-
-    submitted = await bus.submit(activity)
-    processed = await bus.process_next()
-
-    # Check that effect was executed
-    assert len(processed["result"]) == 2  # Effect result and effect log
-    assert processed["result"][0]["type"] == "Note"
-    assert processed["result"][0]["content"] == "Effect executed"
-    assert processed["result"][1]["type"] == "Log"
-    assert processed["result"][1]["message"] == "Effect log"
-
-    # Check that processed activity was stored
-    assert submitted["id"] in mock_store.stored_activities
-    stored = mock_store.stored_activities[submitted["id"]]
-    assert len(stored["result"]) == 2
+    # Should not process any activities
+    assert not bus.store.store.called
 
 
 @pytest.mark.asyncio
-async def test_process_error_handling(bus, mock_store) -> None:
-    """Test error handling during processing."""
-
-    # Register an effect that raises an exception
-    def error_effect(activity) -> NoReturn:
-        raise Exception("Test error")
-
-    registry.register("test.error_effect", error_effect)
-
-    # Add a rule
-    rule = {
-        "id": "test.error.rule",
-        "match": {"type": "Create"},
-        "effect": ["test.error_effect"],
-        "priority": 100,
-        "type": "Rule",
+async def test_process_next_with_activity(bus, mock_store):
+    """Test processing the next activity in the queue."""
+    # Create a valid activity
+    activity = {
+        "type": "Create",
+        "actor": "https://example.com/users/123",
+        "id": "/users/123/outbox/abcdef123456",
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        },
+        "result": []
     }
-    await mock_store.store(rule, collection="/sys/rules")
 
-    # Create and submit an activity
-    activity = {"type": "Create", "actor": "test-user", "object": {"type": "Note", "content": "Test content"}}
+    # Add the activity to the queue
+    await bus.queue.put(activity)
 
-    await bus.submit(activity)
+    # Register a test behavior
+    @when({"type": "Create", "object": {"type": "Note"}})
+    def test_behavior(act):
+        act["result"].append({"type": "Log", "content": "Processed by test behavior"})
+        return None
 
-    # Looking for error message in result
-    processed = await bus.process_next()
+    # Mock the frame function to always match
+    with patch("activity_bus.bus.frame", return_value=True):
+        # Process the next activity
+        result = await bus.process_next()
 
-    # Check that error was recorded in the result
-    assert "result" in processed
-    assert len(processed["result"]) > 0
+    # Should return the processed activity
+    assert result is not None
+    assert result["type"] == "Create"
+    assert result["id"] == "/users/123/outbox/abcdef123456"
 
-    # Find error in results
-    error_result = None
-    for item in processed["result"]:
-        if isinstance(item, dict) and item.get("type") == "Error":
-            error_result = item
-            break
+    # Should have processed the activity with the behavior
+    assert len(result["result"]) == 1
+    assert result["result"][0]["type"] == "Log"
+    assert result["result"][0]["content"] == "Processed by test behavior"
 
-    assert error_result is not None
-    assert "error" in error_result
-    assert "Test error" in error_result["error"]
-    assert "effect" in error_result
-    assert error_result["effect"] == "test.error_effect"
+    # Should have stored the processed activity
+    mock_store.store.assert_called()
 
-
-@pytest.mark.asyncio
-async def test_load_rules(bus, mock_store) -> None:
-    """Test loading rules."""
-    with patch("activity_bus.bus.load_rules") as mock_load_rules:
-        mock_load_rules.return_value = [
-            {"id": "test.rule1", "match": {"type": "Create"}, "effect": ["test.effect1"], "type": "Rule"},
-            {"id": "test.rule2", "match": {"type": "Update"}, "effect": ["test.effect2"], "type": "Rule"},
-        ]
-
-        rules = await bus.load_rules("/path/to/rules")
-
-        # Check that rules were loaded and stored
-        assert len(rules) == 2
-        assert len(mock_store.collections["/sys/rules"]) == 2
-
-        # Check correct parameters were passed
-        mock_load_rules.assert_called_once_with("/path/to/rules")
+    # Queue should be empty
+    assert bus.queue.qsize() == 0
 
 
 @pytest.mark.asyncio
-async def test_load_effects(bus, mock_store) -> None:
-    """Test loading effects."""
-    with patch("activity_bus.bus.load_effects") as mock_load_effects:
-        mock_load_effects.return_value = [
-            {"id": "test.module.effect1", "priority": 100, "type": "Effect"},
-            {"id": "test.module.effect2", "priority": 50, "type": "Effect"},
-        ]
+async def test_process_with_exception(bus, mock_store):
+    """Test processing an activity that causes an exception."""
+    # Create a valid activity
+    activity = {
+        "type": "Create",
+        "actor": "https://example.com/users/123",
+        "id": "/users/123/outbox/abcdef123456",
+        "object": {
+            "type": "Note",
+            "content": "This is a test note"
+        },
+        "result": []
+    }
 
-        effects = await bus.load_effects("test.module")
+    # Register a test behavior that raises an exception
+    @when({"type": "Create", "object": {"type": "Note"}})
+    def test_behavior(act):
+        raise ValueError("Test exception")
 
-        # Check that effects were loaded and stored
-        assert len(effects) == 2
-        assert len(mock_store.collections["/sys/effects"]) == 2
+    # Mock the frame function to always match
+    with patch("activity_bus.bus.frame", return_value=True):
+        # Process the activity
+        result = await bus.process(activity)
 
-        # Check correct parameters were passed
-        mock_load_effects.assert_called_once_with("test.module")
+    # Should return a tombstone
+    assert result["type"] == "Tombstone"
+    assert result["formerType"] == "Create"
+    assert result["id"] == "/users/123/outbox/abcdef123456"
+
+    # Should have added an error to the original activity
+    assert len(activity["result"]) == 1
+    assert activity["result"][0]["type"] == "Error"
+    assert "ValueError: Test exception" in activity["result"][0]["content"]
+
+    # Should have converted the activity to a tombstone
+    mock_store.convert_to_tombstone.assert_called_once_with(activity)
+
+    # Should have stored the tombstone
+    assert mock_store.store.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_extract_user_id_string():
+    """Test extracting a user ID from an actor URI string."""
+    bus = ActivityBus()
+
+    # Test with various actor URIs
+    assert bus._extract_user_id("https://example.com/users/123") == "123"
+    assert bus._extract_user_id("https://example.com/users/alice") == "alice"
+    assert bus._extract_user_id("https://example.com/users/bob/") == "bob"
+
+
+@pytest.mark.asyncio
+async def test_extract_user_id_object():
+    """Test extracting a user ID from an actor object with an ID."""
+    bus = ActivityBus()
+
+    # Test with an actor object
+    actor = {"id": "https://example.com/users/123"}
+    assert bus._extract_user_id(actor) == "123"
+
+
+@pytest.mark.asyncio
+async def test_extract_user_id_invalid():
+    """Test extracting a user ID from an invalid actor."""
+    bus = ActivityBus()
+
+    # Test with an invalid actor
+    with pytest.raises(InvalidActivityError) as excinfo:
+        bus._extract_user_id(123)
+
+    # Verify the error message
+    assert "Actor must be a string or have an 'id' field" in str(excinfo.value)

@@ -1,18 +1,16 @@
-# Initializes the activity_bus package and provides essential exports
-# Serves as the main entry point for using the Activity Bus library
+"""
+This module provides the main entry point for the Activity Bus library.
+"""
 
+from .behaviors import when
 from .bus import ActivityBus
-from .effects import effect, load_effects
-from .errors import ActivityBusError, ActivityIdError, EffectExecutionError, InvalidActivityError
-from .rules import load_rules
+from .errors import ActivityBusError, ActivityIdError, BehaviorExecutionError, InvalidActivityError
 
 __all__ = [
     "ActivityBus",
     "ActivityBusError",
     "ActivityIdError",
-    "EffectExecutionError",
+    "BehaviorExecutionError",
     "InvalidActivityError",
-    "effect",
-    "load_effects",
-    "load_rules",
+    "when"
 ]
