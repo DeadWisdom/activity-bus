@@ -14,11 +14,8 @@ def test_create_note():
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is a test note"},
+        "result": [],
     }
 
     # Execute the behavior
@@ -36,14 +33,7 @@ def test_create_note():
 def test_create_note_invalid():
     """Test the create_note behavior with an invalid note (missing content)."""
     # Create an invalid activity (note missing content)
-    activity = {
-        "type": "Create",
-        "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note"
-        },
-        "result": []
-    }
+    activity = {"type": "Create", "actor": "https://example.com/users/123", "object": {"type": "Note"}, "result": []}
 
     # Execute the behavior - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -62,12 +52,8 @@ def test_update_note():
     activity = {
         "type": "Update",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "id": "https://example.com/notes/456",
-            "content": "This is an updated test note"
-        },
-        "result": []
+        "object": {"type": "Note", "id": "https://example.com/notes/456", "content": "This is an updated test note"},
+        "result": [],
     }
 
     # Execute the behavior
@@ -88,11 +74,8 @@ def test_update_note_invalid_no_id():
     activity = {
         "type": "Update",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is an updated test note"
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is an updated test note"},
+        "result": [],
     }
 
     # Execute the behavior - should raise InvalidActivityError
@@ -116,7 +99,7 @@ def test_update_note_invalid_no_content():
             "type": "Note",
             "id": "https://example.com/notes/456",
         },
-        "result": []
+        "result": [],
     }
 
     # Execute the behavior - should raise InvalidActivityError
@@ -136,11 +119,8 @@ def test_delete_note():
     activity = {
         "type": "Delete",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "id": "https://example.com/notes/456"
-        },
-        "result": []
+        "object": {"type": "Note", "id": "https://example.com/notes/456"},
+        "result": [],
     }
 
     # Execute the behavior
@@ -158,14 +138,7 @@ def test_delete_note():
 def test_delete_note_invalid():
     """Test the delete_note behavior with an invalid note (missing ID)."""
     # Create an invalid activity (note missing ID)
-    activity = {
-        "type": "Delete",
-        "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note"
-        },
-        "result": []
-    }
+    activity = {"type": "Delete", "actor": "https://example.com/users/123", "object": {"type": "Note"}, "result": []}
 
     # Execute the behavior - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -184,12 +157,8 @@ def test_create_reply():
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a reply",
-            "inReplyTo": "https://example.com/notes/789"
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is a reply", "inReplyTo": "https://example.com/notes/789"},
+        "result": [],
     }
 
     # Execute the behavior
@@ -219,12 +188,9 @@ def test_create_reply_with_object_in_reply_to():
         "object": {
             "type": "Note",
             "content": "This is a reply",
-            "inReplyTo": {
-                "id": "https://example.com/notes/789",
-                "type": "Note"
-            }
+            "inReplyTo": {"id": "https://example.com/notes/789", "type": "Note"},
         },
-        "result": []
+        "result": [],
     }
 
     # Execute the behavior
@@ -248,12 +214,8 @@ def test_create_reply_invalid_no_in_reply_to():
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a reply",
-            "inReplyTo": None
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is a reply", "inReplyTo": None},
+        "result": [],
     }
 
     # Execute the behavior - should raise InvalidActivityError
@@ -273,11 +235,8 @@ def test_create_reply_invalid_no_content():
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "inReplyTo": "https://example.com/notes/789"
-        },
-        "result": []
+        "object": {"type": "Note", "inReplyTo": "https://example.com/notes/789"},
+        "result": [],
     }
 
     # Execute the behavior - should raise InvalidActivityError

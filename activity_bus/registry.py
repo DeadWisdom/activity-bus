@@ -1,6 +1,7 @@
 """
 This module provides functionality for registering and retrieving behaviors.
 """
+
 from collections.abc import Callable
 
 
@@ -14,7 +15,7 @@ class BehaviorRegistry:
     def register(self, behavior_id: str, function: Callable) -> None:
         """
         Register a behavior function with a specific ID.
-        
+
         Args:
             behavior_id: The ID of the behavior, typically in the form of "/sys/behaviors/{module}.{function}"
             function: The callable function to be executed when the behavior is matched
@@ -24,10 +25,10 @@ class BehaviorRegistry:
     def get(self, behavior_id: str) -> Callable | None:
         """
         Get a behavior function by its ID.
-        
+
         Args:
             behavior_id: The ID of the behavior to retrieve
-            
+
         Returns:
             The behavior function if found, None otherwise
         """
@@ -40,7 +41,7 @@ class BehaviorRegistry:
     def all_behaviors(self) -> dict[str, Callable]:
         """
         Return all registered behaviors.
-        
+
         Returns:
             Dictionary mapping behavior IDs to their functions
         """

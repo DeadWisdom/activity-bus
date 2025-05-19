@@ -1,6 +1,7 @@
 """
 Tests for the ActivityBus core class.
 """
+
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -24,12 +25,14 @@ def mock_store():
     store = AsyncMock()
     store.store = AsyncMock(return_value=None)
     store.dereference = AsyncMock(return_value=None)
-    store.convert_to_tombstone = AsyncMock(side_effect=lambda x: {
-        "type": "Tombstone",
-        "formerType": x.get("type", "Unknown"),
-        "id": x.get("id", "unknown-id"),
-        "deleted": "2023-01-01T00:00:00Z"
-    })
+    store.convert_to_tombstone = AsyncMock(
+        side_effect=lambda x: {
+            "type": "Tombstone",
+            "formerType": x.get("type", "Unknown"),
+            "id": x.get("id", "unknown-id"),
+            "deleted": "2023-01-01T00:00:00Z",
+        }
+    )
     return store
 
 
@@ -74,10 +77,7 @@ async def test_submit_valid_activity(bus, mock_store):
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
+        "object": {"type": "Note", "content": "This is a test note"},
     }
 
     # Submit the activity
@@ -106,10 +106,7 @@ async def test_submit_with_existing_id(bus, mock_store):
         "type": "Create",
         "actor": "https://example.com/users/123",
         "id": activity_id,
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
+        "object": {"type": "Note", "content": "This is a test note"},
     }
 
     # Submit the activity
@@ -129,13 +126,7 @@ async def test_submit_with_existing_id(bus, mock_store):
 async def test_submit_invalid_activity_missing_actor(bus):
     """Test submitting an invalid activity missing an actor."""
     # Create an invalid activity (missing actor)
-    activity = {
-        "type": "Create",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
-    }
+    activity = {"type": "Create", "object": {"type": "Note", "content": "This is a test note"}}
 
     # Submit the activity - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -153,13 +144,7 @@ async def test_submit_invalid_activity_missing_actor(bus):
 async def test_submit_invalid_activity_missing_type(bus):
     """Test submitting an invalid activity missing a type."""
     # Create an invalid activity (missing type)
-    activity = {
-        "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
-    }
+    activity = {"actor": "https://example.com/users/123", "object": {"type": "Note", "content": "This is a test note"}}
 
     # Submit the activity - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -181,10 +166,7 @@ async def test_submit_invalid_id_scope(bus):
         "type": "Create",
         "actor": "https://example.com/users/123",
         "id": "/users/456/outbox/abcdef123456",  # Different user ID
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
+        "object": {"type": "Note", "content": "This is a test note"},
     }
 
     # Submit the activity - should raise ActivityIdError
@@ -223,11 +205,8 @@ async def test_process_next_with_activity(bus, mock_store):
         "type": "Create",
         "actor": "https://example.com/users/123",
         "id": "/users/123/outbox/abcdef123456",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is a test note"},
+        "result": [],
     }
 
     # Add the activity to the queue
@@ -269,11 +248,8 @@ async def test_process_with_exception(bus, mock_store):
         "type": "Create",
         "actor": "https://example.com/users/123",
         "id": "/users/123/outbox/abcdef123456",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        },
-        "result": []
+        "object": {"type": "Note", "content": "This is a test note"},
+        "result": [],
     }
 
     # Register a test behavior that raises an exception

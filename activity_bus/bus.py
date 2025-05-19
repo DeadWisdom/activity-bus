@@ -1,6 +1,7 @@
 """
 This module contains the core ActivityBus class for processing Activity Streams 2.0 activities.
 """
+
 import asyncio
 import datetime
 import traceback
@@ -11,10 +12,7 @@ try:
     from activity_store import ActivityStore
     from activity_store.ld import frame
 except ImportError as err:
-    raise ImportError(
-        "ActivityStore is required for ActivityBus. "
-        "Install it via: pip install activity-store"
-    ) from err
+    raise ImportError("ActivityStore is required for ActivityBus. Install it via: pip install activity-store") from err
 
 from nanoid import generate
 
@@ -34,7 +32,7 @@ class ActivityBus:
     def __init__(self, store: ActivityStore | None = None, namespace: str = "activity_bus"):
         """
         Initialize a new ActivityBus instance.
-        
+
         Args:
             store: Optional ActivityStore instance, if not provided a new one will be created
             namespace: Optional namespace for the bus, used in generated IDs
@@ -51,13 +49,13 @@ class ActivityBus:
     async def submit(self, activity: dict[str, Any]) -> dict[str, Any]:
         """
         Submit an activity for processing.
-        
+
         Args:
             activity: The activity to submit, must contain at minimum an 'actor' and 'type'
-            
+
         Returns:
             The validated and possibly modified activity with guaranteed ID and timestamp
-            
+
         Raises:
             InvalidActivityError: If the activity is missing required fields
             ActivityIdError: If the activity ID is invalid or not properly scoped
@@ -99,10 +97,10 @@ class ActivityBus:
     async def process_next(self) -> dict[str, Any] | None:
         """
         Process the next activity in the queue.
-        
+
         Returns:
             The processed activity or None if the queue is empty
-            
+
         Raises:
             BehaviorExecutionError: If there's an error executing a behavior (wrapped in the activity result)
         """
@@ -123,13 +121,13 @@ class ActivityBus:
     async def process(self, activity: dict[str, Any]) -> dict[str, Any]:
         """
         Process an activity by matching and executing behaviors.
-        
+
         Args:
             activity: The activity to process
-            
+
         Returns:
             The processed activity with updated result field
-            
+
         Raises:
             BehaviorExecutionError: If there's an error executing a behavior (wrapped in the activity result)
         """
@@ -167,7 +165,7 @@ class ActivityBus:
                             "type": "Error",
                             "content": traceback.format_exc(),
                             "context": activity["id"],
-                            "error_type": type(e).__name__
+                            "error_type": type(e).__name__,
                         }
                         activity["result"].append(error)
 
@@ -192,7 +190,7 @@ class ActivityBus:
                     "type": "Error",
                     "content": traceback.format_exc(),
                     "context": activity.get("id", "unknown"),
-                    "error_type": type(e).__name__
+                    "error_type": type(e).__name__,
                 }
                 if "result" not in activity:
                     activity["result"] = []
@@ -209,10 +207,10 @@ class ActivityBus:
     def _extract_user_id(self, actor: str) -> str:
         """
         Extract a user ID from an actor URI.
-        
+
         Args:
             actor: The actor URI to extract a user ID from
-            
+
         Returns:
             A user ID string suitable for use in activity IDs
         """
@@ -224,16 +222,16 @@ class ActivityBus:
             raise InvalidActivityError(f"Actor must be a string or have an 'id' field, got {type(actor)}")
 
         # Extract the last part of the path as the user ID
-        parts = actor.rstrip('/').split('/')
+        parts = actor.rstrip("/").split("/")
         return parts[-1] if parts else str(uuid.uuid4())
 
     def _validate_id_scope(self, activity: dict[str, Any]) -> None:
         """
         Validate that an activity ID is properly scoped under the actor's URI.
-        
+
         Args:
             activity: The activity to validate
-            
+
         Raises:
             ActivityIdError: If the activity ID is not properly scoped
         """
@@ -251,6 +249,4 @@ class ActivityBus:
         # Basic check - verify that the user ID is somewhere in the activity ID
         # A more sophisticated implementation might enforce a specific path structure
         if f"/users/{user_id}/" not in activity_id:
-            raise ActivityIdError(
-                f"Activity ID '{activity_id}' is not properly scoped under actor '{actor_id}'"
-            )
+            raise ActivityIdError(f"Activity ID '{activity_id}' is not properly scoped under actor '{actor_id}'")

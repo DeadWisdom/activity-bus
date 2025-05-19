@@ -1,6 +1,7 @@
 """
 Tests for the registry module.
 """
+
 from unittest.mock import Mock
 
 from activity_bus.registry import BehaviorRegistry

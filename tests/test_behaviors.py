@@ -34,11 +34,11 @@ def test_when_decorator():
     assert registered_func is test_function
 
     # Verify the pattern is attached to the function
-    assert hasattr(registered_func, '_when_pattern')
+    assert hasattr(registered_func, "_when_pattern")
     assert registered_func._when_pattern == test_pattern
 
     # Verify the behavior ID is attached to the function
-    assert hasattr(registered_func, '_behavior_id')
+    assert hasattr(registered_func, "_behavior_id")
     assert registered_func._behavior_id == behavior_id
 
 
@@ -63,11 +63,11 @@ def test_when_decorator_with_custom_id():
     assert registered_func is test_function
 
     # Verify the pattern is attached to the function
-    assert hasattr(registered_func, '_when_pattern')
+    assert hasattr(registered_func, "_when_pattern")
     assert registered_func._when_pattern == test_pattern
 
     # Verify the behavior ID is attached to the function
-    assert hasattr(registered_func, '_behavior_id')
+    assert hasattr(registered_func, "_behavior_id")
     assert registered_func._behavior_id == custom_id
 
 

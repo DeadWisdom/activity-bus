@@ -12,5 +12,5 @@ __all__ = [
     "ActivityIdError",
     "BehaviorExecutionError",
     "InvalidActivityError",
-    "when"
+    "when",
 ]

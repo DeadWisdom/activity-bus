@@ -1,6 +1,7 @@
 """
 Integration tests for the Activity Bus.
 """
+
 import pytest
 
 from activity_bus import ActivityBus, when
@@ -23,27 +24,25 @@ async def test_submit_and_process():
     # Register a test behavior
     @when({"type": "Create", "object": {"type": "Note"}})
     def test_behavior(activity):
-        activity["result"].append({
-            "type": "Log",
-            "content": f"Processed note with content: {activity['object']['content']}"
-        })
+        activity["result"].append(
+            {"type": "Log", "content": f"Processed note with content: {activity['object']['content']}"}
+        )
 
         # Return a new activity to be submitted
-        return [{
-            "type": "Announce",
-            "actor": activity["actor"],
-            "object": activity["id"],
-            "summary": "Announcing a new note"
-        }]
+        return [
+            {
+                "type": "Announce",
+                "actor": activity["actor"],
+                "object": activity["id"],
+                "summary": "Announcing a new note",
+            }
+        ]
 
     # Create a test activity
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
+        "object": {"type": "Note", "content": "This is a test note"},
     }
 
     # Submit the activity
@@ -95,10 +94,7 @@ async def test_error_handling():
     activity = {
         "type": "Create",
         "actor": "https://example.com/users/123",
-        "object": {
-            "type": "Note",
-            "content": "This is a test note"
-        }
+        "object": {"type": "Note", "content": "This is a test note"},
     }
 
     # Submit the activity
