@@ -126,7 +126,10 @@ async def test_submit_with_existing_id(bus, mock_store):
 async def test_submit_invalid_activity_missing_actor(bus):
     """Test submitting an invalid activity missing an actor."""
     # Create an invalid activity (missing actor)
-    activity = {"type": "Create", "object": {"type": "Note", "content": "This is a test note"}}
+    activity = {
+        "type": "Create",
+        "object": {"type": "Note", "content": "This is a test note"},
+    }
 
     # Submit the activity - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -144,7 +147,10 @@ async def test_submit_invalid_activity_missing_actor(bus):
 async def test_submit_invalid_activity_missing_type(bus):
     """Test submitting an invalid activity missing a type."""
     # Create an invalid activity (missing type)
-    activity = {"actor": "https://example.com/users/123", "object": {"type": "Note", "content": "This is a test note"}}
+    activity = {
+        "actor": "https://example.com/users/123",
+        "object": {"type": "Note", "content": "This is a test note"},
+    }
 
     # Submit the activity - should raise InvalidActivityError
     with pytest.raises(InvalidActivityError) as excinfo:
@@ -218,10 +224,7 @@ async def test_process_next_with_activity(bus, mock_store):
         act["result"].append({"type": "Log", "content": "Processed by test behavior"})
         return None
 
-    # Mock the frame function to always match
-    with patch("activity_bus.bus.frame", return_value=True):
-        # Process the next activity
-        result = await bus.process_next()
+    result = await bus.process_next()
 
     # Should return the processed activity
     assert result is not None
@@ -257,10 +260,7 @@ async def test_process_with_exception(bus, mock_store):
     def test_behavior(act):
         raise ValueError("Test exception")
 
-    # Mock the frame function to always match
-    with patch("activity_bus.bus.frame", return_value=True):
-        # Process the activity
-        result = await bus.process(activity)
+    result = await bus.process(activity)
 
     # Should return a tombstone
     assert result["type"] == "Tombstone"

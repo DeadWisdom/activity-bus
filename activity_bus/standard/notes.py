@@ -26,7 +26,12 @@ def create_note(activity: dict[str, Any]) -> list[dict[str, Any]] | None:
         raise InvalidActivityError("Note must have a content field")
 
     # If successful, add a log entry to the result
-    activity["result"].append({"type": "Log", "content": f"Created note with content: {note.get('content')[:50]}..."})
+    activity["result"].append(
+        {
+            "type": "Log",
+            "content": f"Created note with content: {note.get('content')[:50]}...",
+        }
+    )
 
     return None
 
@@ -53,7 +58,10 @@ def update_note(activity: dict[str, Any]) -> list[dict[str, Any]] | None:
 
     # Log the update
     activity["result"].append(
-        {"type": "Log", "content": f"Updated note {note.get('id')} with content: {note.get('content')[:50]}..."}
+        {
+            "type": "Log",
+            "content": f"Updated note {note.get('id')} with content: {note.get('content')[:50]}...",
+        }
     )
 
     return None
@@ -77,7 +85,9 @@ def delete_note(activity: dict[str, Any]) -> list[dict[str, Any]] | None:
         raise InvalidActivityError("Note being deleted must have an ID")
 
     # Log the deletion
-    activity["result"].append({"type": "Log", "content": f"Deleted note {note.get('id')}"})
+    activity["result"].append(
+        {"type": "Log", "content": f"Deleted note {note.get('id')}"}
+    )
 
     return None
 
