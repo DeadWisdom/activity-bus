@@ -4,7 +4,7 @@ This document provides a step-by-step implementation guide to bring the Activity
 
 ## MANDAMUS TIBI
 
-- Alsways write tests before implementing features, even if that's not explicitly stated in the steps.
+- Always write tests before implementing features, even if that's not explicitly stated in the steps.
 - However, do not write tests for trivialities like the presence of a class or that exceptions can be raised.
 - Completed steps shall be marked with ✅
 
@@ -76,5 +76,5 @@ activity_bus/
 - ID generation ✅
 - Behavior matching and execution ✅
 - Standard notes behaviors ✅
-- Error handling ✅ 
+- Error handling ✅
 - Integration tests for end-to-end `submit()` + `process_next()` ✅

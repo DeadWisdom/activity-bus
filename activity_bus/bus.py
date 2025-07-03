@@ -14,8 +14,6 @@ try:
 except ImportError as err:
     raise ImportError("ActivityStore is required for ActivityBus. Install it via: pip install activity-store") from err
 
-from nanoid import generate
-
 from .behaviors import get_all_behaviors
 from .errors import (
     ActivityIdError,
@@ -72,11 +70,7 @@ class ActivityBus:
 
         # Set ID if missing
         if "id" not in activity:
-            # Generate ID using nanoid
-            activity["id"] = f"/users/{self._extract_user_id(activity['actor'])}/outbox/{generate(size=12)}"
-
-        # Validate ID scope
-        self._validate_id_scope(activity)
+            raise InvalidActivityError("Activity must have an 'id'")
 
         # Set timestamp if missing
         if "published" not in activity:
@@ -203,50 +197,3 @@ class ActivityBus:
             await self.store.store(tombstone)
 
             return tombstone
-
-    def _extract_user_id(self, actor: str) -> str:
-        """
-        Extract a user ID from an actor URI.
-
-        Args:
-            actor: The actor URI to extract a user ID from
-
-        Returns:
-            A user ID string suitable for use in activity IDs
-        """
-        # Simple extraction from the actor URI, can be expanded as needed
-        if isinstance(actor, dict) and "id" in actor:
-            actor = actor["id"]
-
-        if not isinstance(actor, str):
-            raise InvalidActivityError(f"Actor must be a string or have an 'id' field, got {type(actor)}")
-
-        # Extract the last part of the path as the user ID
-        parts = actor.rstrip("/").split("/")
-        return parts[-1] if parts else str(uuid.uuid4())
-
-    def _validate_id_scope(self, activity: dict[str, Any]) -> None:
-        """
-        Validate that an activity ID is properly scoped under the actor's URI.
-
-        Args:
-            activity: The activity to validate
-
-        Raises:
-            ActivityIdError: If the activity ID is not properly scoped
-        """
-        # Extract actor ID for comparison
-        actor_id = activity["actor"]
-        if isinstance(actor_id, dict) and "id" in actor_id:
-            actor_id = actor_id["id"]
-
-        activity_id = activity["id"]
-
-        # For now, we implement a simple check that the activity ID should include the actor in some way
-        # This could be expanded to enforce more specific path-based or domain-based rules
-        user_id = self._extract_user_id(actor_id)
-
-        # Basic check - verify that the user ID is somewhere in the activity ID
-        # A more sophisticated implementation might enforce a specific path structure
-        if f"/users/{user_id}/" not in activity_id:
-            raise ActivityIdError(f"Activity ID '{activity_id}' is not properly scoped under actor '{actor_id}'")
